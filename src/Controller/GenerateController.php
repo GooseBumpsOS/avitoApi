@@ -10,34 +10,45 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class GenerateController extends AbstractController
 {
+    private $length;
+
     /**
      * @Route("/api/generate", name="generate")
      */
     public function index(Request $request)
     {
-        switch ($request->query->get('type')) {
+        $type = $request->query->get('type');
+        $length = $request->query->get('length');
+
+        $this->length = $length;
+
+        if($length < 0 || $length > 128 || empty($length))
+        {
+           return new JsonResponse('Length less then 0 or more then 128');
+        }
+
+        switch ($type) {
             case 'string':
 
-                $random_value = md5(time());
-                $random_value = preg_replace('/[0-9]+/', '', $random_value);
+                $random_value = $this->generateString();
                 $random_value_key = md5($random_value);
                 break;
 
             case 'num':
 
-                $random_value = mt_rand();
+                $random_value = $this->generateNumber();
                 $random_value_key = md5($random_value);
                 break;
 
             case 'numstr':
 
-                $random_value = md5(time());
+                $random_value = $this->generateNumberString();
                 $random_value_key = md5($random_value);
                 break;
 
             case 'guid':
 
-                $random_value = \com_create_guid();
+                $random_value = $this->generateGUID();
                 $random_value_key = md5($random_value);
                 break;
 
@@ -58,4 +69,63 @@ class GenerateController extends AbstractController
 
         return new JsonResponse($end_arr);
     }
+
+    private function getGUID(){
+        if (function_exists('com_create_guid')){
+            return com_create_guid();
+        }else{
+            mt_srand((double)microtime()*10000);//optional for php 4.2.0 and up.
+            $charid = strtoupper(md5(uniqid(rand(), true)));
+            $hyphen = chr(45);// "-"
+            $uuid = substr($charid, 0, 8).$hyphen
+                .substr($charid, 8, 4).$hyphen
+                .substr($charid,12, 4).$hyphen
+                .substr($charid,16, 4).$hyphen
+                .substr($charid,20,12);
+
+            return $uuid;
+        }
+    }
+
+    private function generateString()
+    {
+        $val = '';
+
+        for($i=0; $i<$this->length % 32; $i++ )
+         $val = $val . md5(time());
+        $val = preg_replace('/[0-9]+/', '', $val);
+
+        $val = substr($val, 0, $this->length);
+
+        return $val;
+    }
+
+    private function generateNumber()
+    {
+        $val = '';
+        for($i=0;$i<$this->length; $i++)
+        $val = $val . rand(0,9);
+
+        return $val;
+    }
+
+    private function generateNumberString()
+    {
+        $val = '';
+
+        for($i=0; $i<$this->length % 32; $i++ )
+         $val = $val . md5(time());
+
+        $val = substr($val, 0, $this->length);
+
+        return $val;
+    }
+
+    private function generateGUID() //всегда 128 бит
+    {
+        $val = $this->getGUID();
+
+        return $val;
+    }
+
 }
