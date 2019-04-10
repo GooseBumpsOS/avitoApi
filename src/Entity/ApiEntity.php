@@ -17,7 +17,7 @@ class ApiEntity
     private $id;
 
     /**
-     * @ORM\Column(type="integer")
+     * @ORM\Column(type="string", length=128)
      */
     private $value;
 
