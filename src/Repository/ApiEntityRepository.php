@@ -19,6 +19,18 @@ class ApiEntityRepository extends ServiceEntityRepository
         parent::__construct($registry, ApiEntity::class);
     }
 
+    public function findByValue($value_key)
+    {
+        $qb = $this->createQueryBuilder('p')
+                          ->where('p.value_key = :value')
+                          ->setParameter('value', $value_key)
+                          ->getQuery()
+                          ;
+
+
+        return $qb->getArrayResult();
+    }
+
     // /**
     //  * @return ApiEntity[] Returns an array of ApiEntity objects
     //  */
