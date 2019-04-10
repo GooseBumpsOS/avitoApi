@@ -17,14 +17,28 @@ class GenerateController extends AbstractController
      */
     public function index(Request $request)
     {
+        if (!empty($request->cookies->get('requestId'))) //возможность идемпотентных запросов (несколько запросов с одним requestId вернут то же самое число)
+        {
+
+            $em = $this->getDoctrine()->getManager()->getRepository(ApiEntity::class);
+
+            $db_value = $em->findByValue($request->cookies->get('requestId'));
+
+            $db_value = array_shift($db_value); //тк возвращается массив массивов
+
+            $end_arr = ['value' => $db_value['value'], 'key' => $request->cookies->get('requestId')];
+
+            return new JsonResponse($end_arr);
+
+        }
+
         $type = $request->query->get('type');
         $length = $request->query->get('length');
 
         $this->length = $length;
 
-        if($length < 0 || $length > 128 || empty($length))
-        {
-           return new JsonResponse('Length less then 0 or more then 128');
+        if ($length < 0 || $length > 128 || empty($length)) {
+            return new JsonResponse('Length less then 0 or more then 128');
         }
 
         switch ($type) {
@@ -67,21 +81,24 @@ class GenerateController extends AbstractController
 
         $end_arr = ['value' => $random_value, 'key' => $random_value_key];
 
+        setcookie('requestId', $end_arr['key']);
+
         return new JsonResponse($end_arr);
     }
 
-    private function getGUID(){
-        if (function_exists('com_create_guid')){
+    private function getGUID()
+    {
+        if (function_exists('com_create_guid')) {
             return com_create_guid();
-        }else{
-            mt_srand((double)microtime()*10000);
+        } else {
+            mt_srand((double)microtime() * 10000);
             $charid = strtoupper(md5(uniqid(rand(), true)));
             $hyphen = chr(45);// "-"
-            $uuid = substr($charid, 0, 8).$hyphen
-                .substr($charid, 8, 4).$hyphen
-                .substr($charid,12, 4).$hyphen
-                .substr($charid,16, 4).$hyphen
-                .substr($charid,20,12);
+            $uuid = substr($charid, 0, 8) . $hyphen
+                . substr($charid, 8, 4) . $hyphen
+                . substr($charid, 12, 4) . $hyphen
+                . substr($charid, 16, 4) . $hyphen
+                . substr($charid, 20, 12);
 
             return $uuid;
         }
@@ -91,8 +108,8 @@ class GenerateController extends AbstractController
     {
         $val = '';
 
-        for($i=0; $i<$this->length % 32; $i++ )
-         $val = $val . md5(time());
+        for ($i = 0; $i < $this->length % 32; $i++)
+            $val = $val . md5(time());
         $val = preg_replace('/[0-9]+/', '', $val);
 
         $val = substr($val, 0, $this->length);
@@ -103,8 +120,8 @@ class GenerateController extends AbstractController
     private function generateNumber()
     {
         $val = '';
-        for($i=0;$i<$this->length; $i++)
-        $val = $val . rand(0,9);
+        for ($i = 0; $i < $this->length; $i++)
+            $val = $val . rand(0, 9);
 
         return $val;
     }
@@ -113,8 +130,8 @@ class GenerateController extends AbstractController
     {
         $val = '';
 
-        for($i=0; $i<$this->length % 32; $i++ )
-         $val = $val . md5(time());
+        for ($i = 0; $i < $this->length % 32; $i++)
+            $val = $val . md5(time());
 
         $val = substr($val, 0, $this->length);
 
